@@ -1,0 +1,81 @@
+name: Refresh listings and publish
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # 8:17 AM Eastern: only the matching DST/standard slot collects data.
+    - cron: '17 12 * * 3'
+    - cron: '17 13 * * 3'
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: cinema-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.clock.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - id: clock
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          # Check the scheduled slot, not actual start hour (GitHub can delay jobs).
+          offset=datetime.now(ZoneInfo('America/New_York')).utcoffset().total_seconds()/3600
+          slot='12' if offset == -4 else '13'
+          active=os.environ['EVENT']!='schedule' or os.environ['SCHEDULE']==f'17 {slot} * * 3'
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('deploy='+str(active).lower()+'\n')
+          PY
+      - run: python3 -m pip install -r requirements.txt
+        if: steps.clock.outputs.deploy == 'true'
+      - run: npm test
+        if: steps.clock.outputs.deploy == 'true'
+      - name: Refresh on Wednesday or manual run
+        if: steps.clock.outputs.deploy == 'true' && github.event_name != 'push'
+        env:
+          AMC_API_KEY: ${{ secrets.AMC_API_KEY }}
+        run: python3 scripts/refresh.py
+      - name: Commit refreshed listings
+        if: steps.clock.outputs.deploy == 'true' && github.event_name != 'push'
+        run: |
+          git config user.name 'afterglow-bot'
+          git config user.email 'afterglow-bot@users.noreply.github.com'
+          git add public/data/listings.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh weekly movie listings'
+            git push
+          fi
+      - run: npm run build
+        if: steps.clock.outputs.deploy == 'true'
+      - uses: actions/configure-pages@v5
+        if: steps.clock.outputs.deploy == 'true'
+      - uses: actions/upload-pages-artifact@v4
+        if: steps.clock.outputs.deploy == 'true'
+        with:
+          path: dist
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
