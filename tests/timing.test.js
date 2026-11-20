@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {estimate,clock,matches,easternDate} from '../public/timing.js';
+test('runtime includes credits; 7pm 120-minute movie',()=>{assert.deepEqual(estimate('19:00',120),{start:[1155,1160],end:[1275,1280],credits:[1270,1275]});});
+test('midnight rollover stays next day',()=>{assert.equal(clock(1500),'1:00 AM (+1 day)');assert.deepEqual(estimate('23:00',120).end,[1515,1520]);});
+test('unknown runtime never fabricates an end',()=>{assert.equal(estimate('19:00',null).end,null);assert.equal(estimate('19:00',0).credits,null);});
+test('zero trailers works and credits cannot precede start',()=>{assert.deepEqual(estimate('12:00',3,0,0,5),{start:[720,720],end:[723,723],credits:[720,720]});});
+test('date is Eastern even when UTC is already tomorrow',()=>{assert.equal(easternDate(new Date('2026-11-21T02:00:00Z')),'2026-11-20');});
+const s={area:'nyc',date:'2026-11-20',time:'19:00',runtime:120,title:'The Host',source:'Screen Slate',theater:'IFC Center'};
+const f={area:'nyc',date:'2026-11-20',min:15,max:20,credits:5};
+test('ends-by uses upper bound including credits',()=>{assert.equal(matches(s,{...f,before:'21:19'}),false);assert.equal(matches(s,{...f,before:'21:20'}),true);assert.equal(matches({...s,runtime:null},{...f,before:'22:00'}),false);});
+test('strict area, date, source, theater, and search filters',()=>{assert.equal(matches(s,f),true);for(const bad of [{area:'philly'},{date:'2026-11-21'},{source:'Fandango'},{theater:'BAM'},{query:'xyz'},{after:'20:00'}])assert.equal(matches(s,{...f,...bad}),false);assert.equal(matches(s,{...f,query:'host'}),true);});
+test('chain filtering preserves the supplying source',()=>{const atom={...s,source:'Atom',chain:'AMC'};assert.equal(matches(atom,{...f,chain:'AMC'}),true);assert.equal(matches(atom,{...f,source:'AMC'}),false);assert.equal(matches(atom,{...f,chain:'Regal'}),false);});
