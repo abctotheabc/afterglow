@@ -45,7 +45,7 @@ class SourcesTests(unittest.TestCase):
         self.assertEqual((rows[0]['time'],rows[0]['chain'],rows[0]['source']),('19:30','Regal','Atom'))
         with self.assertRaises(s.WrongDate):s.parse_atom(html,'2026-11-21','https://example.com/123')
     def test_alamo_after_midnight_uses_actual_date(self):
-        p={'data':{'presentations':[{'slug':'film','show':{'title':'Film','runtimeMinutes':110}}], 'market':[{'slug':'nyc','cinemas':[{'id':'c','name':'Brooklyn','latitude':40.69,'longitude':-73.98}]}], 'sessions':[{'cinemaId':'c','sessionId':'1','presentationSlug':'film','showTimeClt':'2026-11-21T00:30:00','businessDateClt':'2026-11-20','status':'ONSALE'}]}}
+        p={'data':{'presentations':[{'slug':'film','show':{'title':'Film','runtimeMinutes':110}}], 'market':[{'slug':'nyc','cinemas':[{'id':'c','name':'Downtown Brooklyn','latitude':40.69,'longitude':-73.98}]}], 'sessions':[{'cinemaId':'c','sessionId':'1','presentationSlug':'film','showTimeClt':'2026-11-21T00:30:00','businessDateClt':'2026-11-20','status':'ONSALE'}]}}
         self.assertEqual(s.parse_alamo(p,'nyc',date(2026,11,20),date(2026,11,20)),[])
         row=s.parse_alamo(p,'nyc',date(2026,11,21),date(2026,11,21))[0]
         self.assertEqual((row['date'],row['time'],row['runtime']),('2026-11-21','00:30',110))
@@ -66,7 +66,7 @@ class CheckpointTests(unittest.TestCase):
     def test_interrupted_import_preserves_unprocessed_source(self):
         import tempfile
         import refresh
-        old={'screenings':[{'area':'nyc','source':'Screen Slate','title':'Film','theater':'Cinema','date':'2026-11-20','time':'19:00'}]}
+        old={'screenings':[{'area':'nyc','source':'Screen Slate','title':'Film','theater':'IFC Center','date':'2026-11-20','time':'19:00'}]}
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'listings.json';path.write_text(json.dumps(old))
             cov={a:s.status() for a in s.CENTERS}

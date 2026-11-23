@@ -11,6 +11,7 @@ import subprocess
 import unicodedata
 from urllib.parse import quote, urlencode
 from zoneinfo import ZoneInfo
+from preferences import DAYS, selected_rows
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'public/data/listings.json'
@@ -62,7 +63,7 @@ def load_local_env():
     """Optional local .env; never included in public output or ZIP."""
     path=ROOT/'.env'
     if path.exists():
-        for line in path.read_text().splitlines():
+        for line in path.read_text(encoding='utf-8').splitlines():
             if line.strip() and not line.lstrip().startswith('#') and '=' in line:
                 k,v=line.split('=',1)
                 if k.strip() in {'AMC_API_KEY','REGAL_DIRECT'}:os.environ.setdefault(k.strip(),v.strip().strip('"').strip("'"))
@@ -70,8 +71,9 @@ def load_local_env():
 
 def collect(start, wikipedia=False, selected=None):
     from sources import Client, CENTERS, NAMES, collect_amc, collect_alamo, collect_cinemark, collect_atom, collect_regal, status, dates, chain
-    end=start+timedelta(days=6);client=Client()
-    old=json.loads(DATA.read_text()) if DATA.exists() else {'screenings':[]}
+    end=start+timedelta(days=DAYS-1);client=Client()
+    old=json.loads(DATA.read_text(encoding='utf-8')) if DATA.exists() else {'screenings':[]}
+    old['screenings']=selected_rows(old['screenings'])
     selected=selected or NAMES
     rows=[s for s in old['screenings'] if start.isoformat()<=s['date']<=end.isoformat()]
     coverage={a:dict(old.get('coverage',{}).get(a,{})) for a in CENTERS}
@@ -81,7 +83,7 @@ def collect(start, wikipedia=False, selected=None):
     def save():
         current=list({(s['area'],s['source'],s['title'],s['theater'],s['date'],s['time'],s.get('format') or ''):s for s in rows}.values())
         result={'version':2,'updatedAt':datetime.now(EASTERN).isoformat(),'weekStart':start.isoformat(),'weekEnd':end.isoformat(),'coverage':coverage,'screenings':current}
-        DATA.parent.mkdir(parents=True,exist_ok=True);temp=DATA.with_suffix('.tmp');temp.write_text(json.dumps(result,ensure_ascii=False,indent=2));temp.replace(DATA)
+        DATA.parent.mkdir(parents=True,exist_ok=True);temp=DATA.with_suffix('.tmp');temp.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8');temp.replace(DATA)
     for name in selected:
         if name=='Screen Slate':
             incoming=[];failed=[]
@@ -92,7 +94,7 @@ def collect(start, wikipedia=False, selected=None):
                     incoming.extend(part)
                 except Exception:failed.append(d)
             cov={a:status('not_applicable','Screen Slate covers NYC in this app.') for a in CENTERS}
-            cov['nyc']=status('error' if len(failed)==7 else 'partial' if failed else 'ok',failedDates=failed)
+            cov['nyc']=status('error' if len(failed)==len(all_days) else 'partial' if failed else 'ok',failedDates=failed)
         else:
             fn={'AMC':collect_amc,'Alamo':collect_alamo,'Cinemark':collect_cinemark,'Atom':collect_atom,'Regal':collect_regal}[name]
             incoming,cov=fn(client,start,end)
@@ -103,6 +105,7 @@ def collect(start, wikipedia=False, selected=None):
             coverage[area][name]=c
             if c['status'] in ['partial','error','blocked','unauthorized','not_configured']:
                 rows.extend({**s,'stale':True} for s in old['screenings'] if s['source']==name and s['area']==area and start.isoformat()<=s['date']<=end.isoformat())
+        incoming=selected_rows(incoming)
         rows.extend(incoming);save()
         print(name+': '+str(len(incoming))+' fresh screenings; checkpoint saved',flush=True)
     # Fill artwork only on an exact normalized title + release-year match. Preserve

@@ -1,0 +1,312 @@
+{
+  "days": 14,
+  "areas": {
+    "nyc": {
+      "label": "New York, NY",
+      "theaters": [
+        {
+          "name": "AMC 19th St. East 6",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-19th-st-east-6/18"
+        },
+        {
+          "name": "AMC 34th Street 14",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-34th-street-14/8057"
+        },
+        {
+          "name": "AMC 84th Street 6",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-84th-street-6/11"
+        },
+        {
+          "name": "AMC Empire 25",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-empire-25/7114"
+        },
+        {
+          "name": "AMC Garden State 16",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-garden-state-16/10415"
+        },
+        {
+          "name": "AMC Jersey Gardens 20",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-jersey-gardens-20/7860"
+        },
+        {
+          "name": "AMC Kips Bay 15",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-kips-bay-15/6018"
+        },
+        {
+          "name": "AMC Lincoln Square 13",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-lincoln-square-13/164"
+        },
+        {
+          "name": "AMC Magic Johnson Harlem 9",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-magic-johnson-harlem-9/7337"
+        },
+        {
+          "name": "AMC Newport Centre 11",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-newport-centre-11/151"
+        },
+        {
+          "name": "AMC Orpheum 7",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-orpheum-7/13"
+        },
+        {
+          "name": "AMC Roosevelt Field 8",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-roosevelt-field-8/188"
+        },
+        {
+          "name": "AMC Village 7",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-village-7/17"
+        },
+        {
+          "name": "Alamo Drafthouse Downtown Brooklyn"
+        },
+        {
+          "name": "Alamo Drafthouse Lower Manhattan"
+        },
+        {
+          "name": "Anthology Film Archives"
+        },
+        {
+          "name": "BAM"
+        },
+        {
+          "name": "Alcove Cinema"
+        },
+        {
+          "name": "Film Forum"
+        },
+        {
+          "name": "Film at Lincoln Center"
+        },
+        {
+          "name": "IFC Center"
+        },
+        {
+          "name": "L'Alliance New York"
+        },
+        {
+          "name": "Metrograph"
+        },
+        {
+          "name": "Museum of Modern Art"
+        },
+        {
+          "name": "Museum of the Moving Image"
+        },
+        {
+          "name": "Nitehawk Cinema Prospect Park"
+        },
+        {
+          "name": "Nitehawk Cinema Williamsburg"
+        },
+        {
+          "name": "Paris Theater"
+        },
+        {
+          "name": "Quad Cinema"
+        },
+        {
+          "name": "Regal Battery Park",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-battery-park/7333"
+        },
+        {
+          "name": "Regal Essex Crossing",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-essex-crossing/48418"
+        },
+        {
+          "name": "Regal Times Square",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-times-square/10131"
+        },
+        {
+          "name": "Roxy Cinema New York"
+        },
+        {
+          "name": "Village East Cinema"
+        },
+        {
+          "name": "Angelika Film Center New York",
+          "aliases": [
+            "Angelika New York",
+            "Angelika Film Center"
+          ],
+          "atomUrl": "https://www.atomtickets.com/theaters/angelika-film-center-new-york/1",
+          "listingUrl": "https://angelikafilmcenter.com/nyc/now-playing"
+        }
+      ]
+    },
+    "olney": {
+      "label": "Rockville, MD",
+      "theaters": [
+        {
+          "name": "AMC Columbia 14",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-columbia-14/8612"
+        },
+        {
+          "name": "AMC Courthouse Plaza 8",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-courthouse-plaza-8/1269"
+        },
+        {
+          "name": "AMC Georgetown 14",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-georgetown-14/8353"
+        },
+        {
+          "name": "AMC Montgomery 16",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-montgomery-16/39975"
+        },
+        {
+          "name": "AMC Rio Cinemas 18",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-rio-cinemas-18/1298"
+        },
+        {
+          "name": "AMC Tysons Corner 16",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-tysons-corner-16/9803"
+        },
+        {
+          "name": "AMC Wheaton Mall 9",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-wheaton-mall-9/43225"
+        },
+        {
+          "name": "Regal Ballston Quarter",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ballston-quarter/6135"
+        },
+        {
+          "name": "Regal Hyattsville Royale",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-hyattsville-royale/10849"
+        },
+        {
+          "name": "Regal Laurel Towne Centre",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-laurel-towne-centre/1227"
+        },
+        {
+          "name": "Regal Rockville Center",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-rockville-center/5356"
+        }
+      ]
+    },
+    "miami": {
+      "label": "Miami, FL",
+      "theaters": [
+        {
+          "name": "Regal Kendall Village",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-kendall-village/9322"
+        },
+        {
+          "name": "AMC Tamiami 18",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-tamiami-18/2552"
+        },
+        {
+          "name": "AMC Sunset Place 24",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-sunset-place-24/5491"
+        },
+        {
+          "name": "AMC Aventura 24",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-aventura-24/4981"
+        }
+      ]
+    },
+    "philly": {
+      "label": "Philadelphia, PA",
+      "theaters": [
+        {
+          "name": "AMC 309 Cinema 9",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-309-cinema-9/3280"
+        },
+        {
+          "name": "AMC Broadstreet 7",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-broadstreet-7/10379"
+        },
+        {
+          "name": "AMC Cherry Hill 24",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-cherry-hill-24/5483"
+        },
+        {
+          "name": "AMC DINE-IN Fashion District 8",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-dine-in-fashion-district-8/49976"
+        },
+        {
+          "name": "AMC DINE-IN Painters Crossing 9",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-dine-in-painters-crossing-9/3288"
+        },
+        {
+          "name": "AMC Deptford 8",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-deptford-8/3283"
+        },
+        {
+          "name": "AMC Marlton 8",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-marlton-8/3285"
+        },
+        {
+          "name": "AMC Marple 10",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-marple-10/3286"
+        },
+        {
+          "name": "AMC Neshaminy 24",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-neshaminy-24/5165"
+        },
+        {
+          "name": "AMC Plymouth Meeting Mall 12",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-plymouth-meeting-mall-12/5533"
+        },
+        {
+          "name": "AMC Voorhees 16",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-voorhees-16/44121"
+        },
+        {
+          "name": "AMC Woodhaven 10",
+          "atomUrl": "https://www.atomtickets.com/theaters/amc-woodhaven-10/3289"
+        },
+        {
+          "name": "Cinemark Somerdale 16 and XD",
+          "cinemarkUrl": "https://www.cinemark.com/theatres/nj-somerdale/cinemark-somerdale-16-and-xd"
+        },
+        {
+          "name": "Cinemark University City Penn 6",
+          "cinemarkUrl": "https://www.cinemark.com/theatres/pa-philadelphia/cinemark-university-city-penn-6"
+        },
+        {
+          "name": "Regal Brandywine Town Center",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-brandywine-town-center/1809"
+        },
+        {
+          "name": "Regal Burlington",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-burlington/1810"
+        },
+        {
+          "name": "Regal Edgmont Square",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-edgmont-square/2934"
+        },
+        {
+          "name": "Regal Independence Plaza",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-independence-plaza/100200"
+        },
+        {
+          "name": "Regal Plymouth Meeting",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-plymouth-meeting/1845"
+        },
+        {
+          "name": "Regal UA Grant Plaza",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ua-grant-plaza/581"
+        },
+        {
+          "name": "Regal UA King Of Prussia",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ua-king-of-prussia/7172"
+        },
+        {
+          "name": "Regal UA Main Street",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ua-main-street/3302"
+        },
+        {
+          "name": "Regal UA Oxford Valley",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ua-oxford-valley/3301"
+        },
+        {
+          "name": "Regal UA Washington Township",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-ua-washington-township/3305"
+        },
+        {
+          "name": "Regal Warrington Crossing",
+          "atomUrl": "https://www.atomtickets.com/theaters/regal-warrington-crossing/6271"
+        }
+      ]
+    }
+  }
+}

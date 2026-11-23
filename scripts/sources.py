@@ -13,13 +13,13 @@ import time
 from urllib.parse import urljoin, urlparse, urlencode
 from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
+from preferences import CONFIG, allowed, locations_for, source_urls
 
 ROOT=Path(__file__).resolve().parents[1]
 ET=ZoneInfo('America/New_York')
 # Approximate preset centers; distances are straight-line miles, not driving miles.
 CENTERS={'nyc':(40.7506,-73.9972),'philly':(39.9526,-75.1652),'miami':(25.7617,-80.1918),'olney':(39.1532,-77.0669)}
-ATOM_CITIES={'nyc':['ny-new-york'],'philly':['pa-philadelphia'],'miami':['fl-miami'],'olney':['md-rockville','md-silver-spring']}
-ALAMO_MARKETS={'nyc':['nyc','yonkers'],'philly':[],'miami':[],'olney':['dc-metro-area','northern-virginia']}
+ALAMO_MARKETS={'nyc':['nyc'],'philly':[],'miami':[],'olney':[]}
 NAMES=['Screen Slate','AMC','Alamo','Cinemark','Regal','Atom']
 
 class SourceError(Exception):pass
@@ -61,16 +61,16 @@ class Client:
         if host in self.blocked:raise Blocked('Source blocked automated access; no bypass attempted')
         # The cache key is a one-way digest; credentials are never written to disk.
         p=self.cache/(sha256((url+json.dumps(headers,sort_keys=True)).encode()).hexdigest()+'.txt')
-        if p.exists() and time.time()-p.stat().st_mtime<6*3600:return p.read_text()
+        if p.exists() and time.time()-p.stat().st_mtime<6*3600:return p.read_text(encoding='utf-8')
         config='\n'.join('header = '+json.dumps(k+': '+v) for k,v in headers.items())
-        r=subprocess.run(['curl','--silent','--show-error','--location','--max-time','25','--user-agent','AfterglowPersonalCinema/2.0','--config','-','--write-out','\n%{http_code}',url],input=config,text=True,capture_output=True)
+        r=subprocess.run(['curl','--silent','--show-error','--location','--max-time','25','--user-agent','AfterglowPersonalCinema/2.0','--config','-','--write-out','\n%{http_code}',url],input=config,text=True,encoding='utf-8',capture_output=True)
         body,_,status=r.stdout.rpartition('\n')
         if 'Attention Required! | Cloudflare' in body or 'Sorry, you have been blocked' in body or 'cf-chl-' in body:
             with self.lock:self.blocked.add(host)
             raise Blocked('Source blocked automated access; no bypass attempted')
         if 'Unauthorized VendorKey' in body:raise Unauthorized('AMC rejected the vendor key (12005); activation or permissions required')
         if r.returncode or not status.startswith('2'):raise SourceError('Source returned HTTP '+status if status else 'Source request timed out')
-        p.write_text(body)
+        p.write_text(body,encoding='utf-8')
         return body
     def json(self,url,headers=None):
         try:return json.loads(self.get(url,headers))
@@ -86,6 +86,12 @@ def parallel(fn,items,workers=3):
 
 def status(state='ok',message='',**kw):
     return {'status':state,'message':message,'checkedAt':datetime.now(ET).isoformat(),**kw}
+
+def venue_failure(coverage,field,url,day,error):
+    for area,preset in CONFIG['areas'].items():
+        if any(v.get(field)==url for v in preset['theaters']):
+            coverage[area]['failures'].append({'url':url,'date':day,'error':str(error)})
+            coverage[area]['failedDates'].append(day)
 
 def dates(start,end):
     return [(start+timedelta(days=i)).isoformat() for i in range((end-start).days+1)]
@@ -144,18 +150,16 @@ def parse_cinemark(html,requested):
 
 def collect_cinemark(client,start,end):
     rows=[];coverage={a:status(theaters=0,failedDates=[],failures=[]) for a in CENTERS};days=live_dates(start,end)
-    try:
-        html=client.get('https://www.cinemark.com/full-theatre-list');soup=BeautifulSoup(html,'html.parser')
-        # Neighboring states around the four presets. Actual inclusion is coordinate-based.
-        urls=sorted({urljoin('https://www.cinemark.com',a['href']) for a in soup.select('a[href]') if re.match(r'^/theatres/(?:ny|nj|pa|de|md|va|dc|fl|ct)-',a['href'])})
-        if not urls:raise SourceError('Cinemark theater directory unavailable')
-    except Exception as e:return [],{a:status('error',str(e)) for a in CENTERS}
+    urls=source_urls('cinemarkUrl')
     if not days:return [],{a:status('not_available','Historical dates are not available') for a in CENTERS}
     venues=[];directory_errors=0
     def first(url):return parse_cinemark(client.get(url+'?showDate='+days[0]),days[0])
     for url,result,error in parallel(first,urls):
-        if error:directory_errors+=1;continue
-        incoming,locations,t=result;rows.extend(incoming)
+        if error:
+            directory_errors+=1
+            venue_failure(coverage,'cinemarkUrl',url,days[0],error)
+            continue
+        incoming,locations,t=result;locations=locations_for(t['name'],locations);rows.extend(incoming)
         if locations:
             venues.append((url,locations));
             for area in locations:coverage[area]['theaters']+=1
@@ -167,8 +171,8 @@ def collect_cinemark(client,start,end):
         else:rows.extend(incoming)
     for a,c in coverage.items():
         c['failedDates']=sorted(set(c['failedDates']));c['directoryErrors']=directory_errors
-        if directory_errors or c['failures']:c['status']='partial';c['message']='Some theater pages could not be read; coverage is incomplete.'
-        elif not c['theaters']:c['status']='no_nearby';c['message']='No Cinemark theaters found within this preset radius.'
+        if c['failures']:c['status']='partial';c['message']='Some selected theater pages could not be read; coverage is incomplete.'
+        elif not c['theaters']:c['status']='no_nearby';c['message']='No Cinemark theaters selected in this area.'
     print('Cinemark:',len(rows),'screenings',flush=True)
     return rows,coverage
 
@@ -176,9 +180,9 @@ def atom_venue(html,client=None):
     graph=structured_graph(html);v=next((n for n in graph if n.get('@type')=='MovieTheater'),None)
     if not v and client:
         soup=BeautifulSoup(html,'html.parser');name=soup.select_one('[data-qa="VenueHeader_Name"]');address=soup.select_one('[data-qa="VenueHeader_Address"]')
-        # Regal pages omit JSON-LD coordinates. Resolve their published street
+        # Regal and Angelika pages omit JSON-LD coordinates. Resolve their published street
         # address through the Census geocoder; never infer a radius from city alone.
-        if name and address and name.get_text(strip=True).startswith('Regal '):
+        if name and address and (name.get_text(strip=True).startswith('Regal ') or name.get_text(strip=True).startswith('Angelika Film Center New York')):
             street=address.get_text(' ',strip=True).removesuffix('view on google maps').strip()
             result=client.json('https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?'+urlencode({'address':street,'benchmark':'Public_AR_Current','format':'json'}))
             matches=result.get('result',{}).get('addressMatches',[])
@@ -218,20 +222,23 @@ def parse_atom(html,requested,url,client=None):
 def collect_atom(client,start,end):
     days=live_dates(start,end);rows=[];cov={a:status(theaters=0,failedDates=[],failures=[]) for a in CENTERS}
     if not days:return [],{a:status('not_available','Historical dates are not available') for a in CENTERS}
-    urls=set();index_fail=[]
-    for a,slugs in ATOM_CITIES.items():
-        for slug in slugs:
-            try:
-                soup=BeautifulSoup(client.get('https://www.atomtickets.com/theaters/'+slug),'html.parser')
-                found={urljoin('https://www.atomtickets.com',tag['href']) for tag in soup.select('a[href]') if re.fullmatch(r'/theaters/[^/]+/\d+',tag['href'])}
-                if not found:raise SourceError('Atom discovery page returned no theaters')
-                urls.update(found)
-            except Exception as e:index_fail.append(a);cov[a]['failures'].append({'date':None,'error':str(e)})
+    # Use verified selected venue URLs; do not crawl every city directory.
+    urls=source_urls('atomUrl')
     venues=[];discovery_errors=0
-    def first(url):return parse_atom(client.get(url,{'Cookie':'date='+days[0]}),days[0],url,client)
+    def first(url):
+        html=client.get(url,{'Cookie':'date='+days[0]})
+        try:return (*parse_atom(html,days[0],url,client),None)
+        except WrongDate as error:
+            # A venue may publish future dates without publishing today's shows.
+            v,locations=atom_venue(html,client)
+            return [],locations,v,error
     for i,(url,result,error) in enumerate(parallel(first,sorted(urls))):
-        if error:discovery_errors+=1;continue
-        incoming,locations,v=result;rows.extend(incoming)
+        if error:
+            discovery_errors+=1
+            venue_failure(cov,'atomUrl',url,days[0],error)
+            continue
+        incoming,locations,v,date_error=result;locations=locations_for(v['name'],locations);rows.extend(incoming)
+        if date_error:venue_failure(cov,'atomUrl',url,days[0],date_error)
         if locations:
             venues.append((url,locations))
             for a in locations:cov[a]['theaters']+=1
@@ -246,8 +253,8 @@ def collect_atom(client,start,end):
         if (i+1)%60==0:print('Atom: collected',i+1,'of',len(jobs),'remaining theater/date pages',flush=True)
     for a,c in cov.items():
         c['discoveryErrors']=discovery_errors;c['failedDates']=sorted(set(c['failedDates']))
-        c['message']='Discovered through Atom city directories; not guaranteed to include every theater. Early-AM times omitted where calendar date is ambiguous.'
-        if discovery_errors or c['failures']:c['status']='partial'
+        c['message']='Only selected theater pages are collected. Early-AM times omitted where calendar date is ambiguous.'
+        if c['failures']:c['status']='partial'
         if not c['theaters']:c['status']='error';c['message']='No nearby Atom theater pages could be verified.'
     print('Atom:',len(rows),'screenings',flush=True)
     return rows,cov
@@ -258,7 +265,7 @@ def parse_alamo(payload,area,start,end,details=None):
         stamp=s['showTimeClt']
         if not start.isoformat()<=stamp[:10]<=end.isoformat() or s.get('isHidden') or s.get('status') not in ['ONSALE','SOLDOUT']:continue
         c=cinemas[s['cinemaId']];loc=nearby(c.get('latitude'),c.get('longitude'))
-        if area not in loc:continue
+        if area not in loc or not allowed(area,'Alamo Drafthouse '+c['name']):continue
         p=(details or {}).get(s['presentationSlug']) or movies[s['presentationSlug']];show=p.get('show') or {};event=p.get('event') or {};m={**show,**{k:v for k,v in event.items() if v is not None}}
         title=BeautifulSoup(m.get('title') or s['presentationSlug'],'html.parser').get_text(' ',strip=True);release=m.get('nationalReleaseDateUtc');posters=show.get('posterImages') or []
         market=next(x['slug'] for x in d['market'] if c in x['cinemas'])
@@ -270,13 +277,13 @@ def parse_alamo(payload,area,start,end,details=None):
 def collect_alamo(client,start,end):
     rows=[];cov={};payloads=[];jobs={}
     for area,markets in ALAMO_MARKETS.items():
-        if not markets:cov[area]=status('no_nearby','No Alamo market listed for this preset.');continue
+        if not markets:cov[area]=status('no_nearby','No Alamo theaters selected in this area.');continue
         cov[area]=status(theaters=0,failures=[])
         for market in markets:
             try:
                 p=client.json('https://drafthouse.com/s/mother/v2/schedule/market/'+market);payloads.append((area,market,p))
                 cinemas={c['id']:c for m in p['data']['market'] for c in m['cinemas']}
-                near={cid for cid,c in cinemas.items() if area in nearby(c.get('latitude'),c.get('longitude'))};cov[area]['theaters']+=len(near)
+                near={cid for cid,c in cinemas.items() if area in nearby(c.get('latitude'),c.get('longitude')) and allowed(area,'Alamo Drafthouse '+c['name'])};cov[area]['theaters']+=len(near)
                 for s in p['data']['sessions']:
                     if s['cinemaId'] in near and start.isoformat()<=s['showTimeClt'][:10]<=end.isoformat():jobs.setdefault(s['presentationSlug'],market)
             except Exception as e:cov[area]['status']='partial';cov[area]['failures'].append(str(e))
@@ -316,7 +323,7 @@ def collect_amc(client,start,end):
     nearby_theaters=[];rows=[];cov={a:status(theaters=0,failedDates=[]) for a in CENTERS}
     for t in theaters:
         loc=t.get('location') or {}
-        try:locations=nearby(loc.get('latitude'),loc.get('longitude'))
+        try:locations=locations_for(t['name'],nearby(loc.get('latitude'),loc.get('longitude')))
         except SourceError:continue
         if locations:
             nearby_theaters.append((t,locations))
@@ -354,8 +361,9 @@ def collect_regal(client,start,end):
     config=ROOT/'config/regal-venues.json'
     if not config.exists():return [],{a:status('not_configured','Supply verified Regal venue URLs and coordinates in config/regal-venues.json.') for a in CENTERS}
     rows=[];cov={a:status(theaters=0,failedDates=[]) for a in CENTERS}
-    for venue in json.loads(config.read_text()):
-        loc=nearby(venue['latitude'],venue['longitude'])
+    for venue in json.loads(config.read_text(encoding='utf-8')):
+        loc=locations_for(venue['name'],nearby(venue['latitude'],venue['longitude']))
+        if not loc:continue
         try:
             html=client.get(venue['url'])
             for d in live_dates(start,end):rows.extend(parse_regal(html,d,venue))
